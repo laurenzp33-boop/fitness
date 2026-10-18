@@ -124,7 +124,11 @@ window.addEventListener('DOMContentLoaded', () => {
   App.boot().catch((err) => {
     console.error(err);
     document.getElementById('app').innerHTML =
-      `<div class="empty"><div class="ico">${Icons.get('warn', 40)}</div>Die App konnte nicht starten.<br>
-       <span class="small">${Util.esc(err && err.message)}</span></div>`;
+      `<div class="empty"><div class="ico">${Icons.get('warn', 40)}</div>
+         Die App konnte nicht starten.<br>
+         <span class="small">${Util.esc(err && err.message)}</span>
+       </div>
+       <button class="btn primary block" onclick="location.reload()">Nochmal versuchen</button>
+       <p class="small muted center mt">Deine gespeicherten Trainings sind davon nicht betroffen.</p>`;
   });
 });

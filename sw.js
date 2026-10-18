@@ -5,7 +5,7 @@
    Wichtig: Deine Trainingsdaten liegen NICHT hier, sondern in der
    Datenbank (IndexedDB). Der Service Worker speichert nur die App selbst. */
 
-const CACHE = 'fitness-app-v3';
+const CACHE = 'fitness-app-v4';
 
 const FILES = [
   './',

@@ -17,9 +17,29 @@ const DB = (function () {
 
   function open() {
     if (dbPromise) return dbPromise;
+
     dbPromise = new Promise((resolve, reject) => {
       const req = indexedDB.open(NAME, VERSION);
-      req.onupgradeneeded = (e) => {
+
+      /* Sicherheitsnetz: In seltenen Fällen (ein zweites offenes Fenster der
+         App, Safari im privaten Modus) meldet sich die Datenbank einfach nie
+         zurück. Ohne Zeitlimit bliebe der Bildschirm dann schwarz. */
+      let erledigt = false;
+      const frist = setTimeout(() => {
+        if (erledigt) return;
+        erledigt = true;
+        reject(new Error('Die Datenbank antwortet nicht. Schließe alle anderen Fenster '
+          + 'dieser App und starte sie neu.'));
+      }, 10000);
+
+      const einmal = (fn) => () => {
+        if (erledigt) return;
+        erledigt = true;
+        clearTimeout(frist);
+        fn();
+      };
+
+      req.onupgradeneeded = () => {
         const db = req.result;
         if (!db.objectStoreNames.contains(KV)) db.createObjectStore(KV, { keyPath: 'key' });
         if (!db.objectStoreNames.contains(SESSIONS)) {
@@ -29,10 +49,14 @@ const DB = (function () {
         if (!db.objectStoreNames.contains(RECORDS)) db.createObjectStore(RECORDS, { keyPath: 'exerciseId' });
         if (!db.objectStoreNames.contains(WEIGHT)) db.createObjectStore(WEIGHT, { keyPath: 'date' });
       };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-      req.onblocked = () => reject(new Error('Datenbank blockiert – bitte andere Tabs der App schließen.'));
+      req.onsuccess = einmal(() => resolve(req.result));
+      req.onerror = einmal(() => reject(req.error || new Error('Die Datenbank ließ sich nicht öffnen.')));
+      req.onblocked = einmal(() => reject(
+        new Error('Die Datenbank ist blockiert. Bitte schließe alle anderen Fenster dieser App.')));
     });
+
+    // Bei einem Fehler den Merker zurücksetzen, damit "Nochmal versuchen" wirkt
+    dbPromise.catch(() => { dbPromise = null; });
     return dbPromise;
   }
 
